@@ -1,0 +1,7 @@
+pathlib 
+numpy 
+matplotlib 
+pillow
+opencv-python
+scikit_learn
+seaborn
