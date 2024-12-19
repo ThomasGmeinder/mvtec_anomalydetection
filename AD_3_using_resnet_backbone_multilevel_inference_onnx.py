@@ -15,10 +15,12 @@ from torchvision.transforms import transforms
 import torch.optim as optim
 
 from torchvision.models import resnet50, ResNet50_Weights
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay, f1_score
+import onnxruntime
 
 import time
-
-import onnxruntime as ort
 
 transform = transforms.Compose([
     transforms.Resize((224,224)),
@@ -82,7 +84,27 @@ print(f"Running inference on all carpet test images on {hw_target}")
 total_inference_time = 0
 inference_cnt = 0
 
-ort_session = ort.InferenceSession("autoencoder_with_resnet_deep_features.onnx")
+# Select the ONNX Execution Provider
+#EP = "VitisAIExecutionProvider" # NPU
+EP = "CPUExecutionProvider"    # CPU
+#EP = "DmlExecutionProvider"    # iGPU
+
+
+AIA = False # Enable AI Analyzer
+config_file_path = "./vaip_config.json"
+EP_options = [{
+    'config_file': config_file_path,
+    'ai_analyzer_visualization': AIA,
+    'ai_analyzer_profiling': AIA,
+    }]
+
+onnx_model_path = "./autoencoder_with_resnet_deep_features.onnx"
+ort_session = onnxruntime.InferenceSession(
+                    onnx_model_path,
+                    providers=[EP],
+                    provider_options=EP_options
+                )
+
 for path in test_path.glob('*/*.png'):
     fault_type = path.parts[-2]
     test_image = transform(Image.open(path)).cuda().unsqueeze(0)
@@ -125,11 +147,6 @@ y_true = np.array(y_true)
 y_pred = np.array(y_pred)
 y_score = np.array(y_score)
     
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay, f1_score
-import onnxruntime as ort
-
 # Calculate AUC-ROC score
 auc_roc_score = roc_auc_score(y_true, y_score)
 print("AUC-ROC Score:", auc_roc_score)
