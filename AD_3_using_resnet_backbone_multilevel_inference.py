@@ -101,7 +101,7 @@ for path in test_path.glob('*/*.png'):
     test_image = transform(Image.open(path)).unsqueeze(0)
 
     if torch.cuda.is_available():
-        test_image.cuda()
+        test_image = test_image.cuda()
     
     with torch.no_grad():
         start = time.time()

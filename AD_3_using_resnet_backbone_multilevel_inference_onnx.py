@@ -111,7 +111,7 @@ for path in test_path.glob('*/*.png'):
     test_image = transform(Image.open(path)).unsqueeze(0)
 
     if torch.cuda.is_available():
-        test_image.cuda()
+        test_image = test_image.cuda()
     
     with torch.no_grad():
         start = time.time()
@@ -126,6 +126,8 @@ for path in test_path.glob('*/*.png'):
 
         # Convert the output back to a torch tensor
         recon = torch.tensor(recon_np)
+        if torch.cuda.is_available():
+            recon = recon.cuda()
         inference_time = time.time()-start
         print(f"Inference time: {inference_time:.4f} s")
 
