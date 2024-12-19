@@ -3,5 +3,7 @@ numpy
 matplotlib 
 pillow
 opencv-python
+onnx
+onnxruntime
 scikit_learn
 seaborn

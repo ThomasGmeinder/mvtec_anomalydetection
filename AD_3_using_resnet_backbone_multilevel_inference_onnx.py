@@ -18,8 +18,7 @@ from torchvision.models import resnet50, ResNet50_Weights
 
 import time
 
-import onnx
-import onnxscript
+import onnxruntime as ort
 
 transform = transforms.Compose([
     transforms.Resize((224,224)),
@@ -43,18 +42,12 @@ test_loader = DataLoader(good_dataset, batch_size=BS, shuffle=True)
 
 from AD_3_using_resnet_backbone_multilevel_model import FeatCAE, resnet_feature_extractor
 
-model = FeatCAE(in_channels=1536, latent_dim=100)
 
 backbone = resnet_feature_extractor()
 #backbone = new_resnet_feature_extractor()
 
-model = model.cuda()
 backbone.cuda()
 
-ckpoints = torch.load('autoencoder_with_resnet_deep_features.pth')
-model.load_state_dict(ckpoints)
-
-model.eval()
 def decision_function(segm_map):  
 
     mean_top_10_values = []
@@ -80,7 +73,6 @@ y_true=[]
 y_pred=[]
 y_score=[]
 
-model.eval()
 backbone.eval()
 
 test_path = Path('carpet/test')
@@ -90,8 +82,7 @@ print(f"Running inference on all carpet test images on {hw_target}")
 total_inference_time = 0
 inference_cnt = 0
 
-
-onnx_export_done = False
+ort_session = ort.InferenceSession("autoencoder_with_resnet_deep_features.onnx")
 for path in test_path.glob('*/*.png'):
     fault_type = path.parts[-2]
     test_image = transform(Image.open(path)).cuda().unsqueeze(0)
@@ -99,18 +90,19 @@ for path in test_path.glob('*/*.png'):
     with torch.no_grad():
         start = time.time()
         features = backbone(test_image)
-        # Forward pass
-        recon = model(features)
+
+        # Prepare the input for the ONNX model
+        input_name = ort_session.get_inputs()[0].name
+        features_np = features.cpu().numpy()
+
+        # Run inference
+        recon_np = ort_session.run(None, {input_name: features_np})[0]
+
+        # Convert the output back to a torch tensor
+        recon = torch.tensor(recon_np).cuda()
         inference_time = time.time()-start
         print(f"Inference time: {inference_time:.4f} s")
-        if not onnx_export_done:
-            print("Exporting model to ONNX")
-            # backbone onnx export causesd error
-            # backbone_onnx = torch.onnx.dynamo_export(backbone, test_image)
-            # backbone_onnx.save("resnet50_backbone.onnx")
-            model_onnx = torch.onnx.dynamo_export(model, features)
-            model_onnx.save("autoencoder_with_resnet_deep_features.onnx")
-            onnx_export_done = True
+
     
     inference_cnt += 1
     
@@ -136,6 +128,7 @@ y_score = np.array(y_score)
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay, f1_score
+import onnxruntime as ort
 
 # Calculate AUC-ROC score
 auc_roc_score = roc_auc_score(y_true, y_score)
