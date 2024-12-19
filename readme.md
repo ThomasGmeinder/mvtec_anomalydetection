@@ -5,19 +5,28 @@ There is also a script [AD_3_using_resnet_backbone_multilevel_inference.py](./AD
 
 # Performance and accuracy
 
-## PyTorch
-[AD_3_using_resnet_backbone_multilevel_inference.py](./AD_3_using_resnet_backbone_multilevel_inference.py) on GPU:
+## PyTorch on GPU
+Run this on Machine with GPUs enabled:
+[AD_3_using_resnet_backbone_multilevel_inference.py](./AD_3_using_resnet_backbone_multilevel_inference.py):
 
 ```
 Average inference time: 0.0074 s
 AUC-ROC Score: 0.9867576243980738
 ```
 
-## Autoencoder on ONNX, ResNet backbone on PyTorch
+## Autoencoder on ONNX, ResNet backbone on PyTorch. On GPU
+Run this on Machine with GPUs enabled:
 [AD_3_using_resnet_backbone_multilevel_inference_onnx.py](./AD_3_using_resnet_backbone_multilevel_inference_onnx.py) on GPU: 
 
 ```
 Average inference time: 0.0177 s
+AUC-ROC Score: 0.9867576243980738
+```
+
+## Autoencoder on ONNX, ResNet backbone on PyTorch. On CPU
+
+```
+Average inference time: 0.0533 s
 AUC-ROC Score: 0.9867576243980738
 ```
 

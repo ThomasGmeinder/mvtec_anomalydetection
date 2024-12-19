@@ -1,4 +1,6 @@
 pathlib 
+torch
+torchvision
 numpy 
 matplotlib 
 pillow
