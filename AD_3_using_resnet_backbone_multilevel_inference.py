@@ -48,10 +48,14 @@ model = FeatCAE(in_channels=1536, latent_dim=100)
 backbone = resnet_feature_extractor()
 #backbone = new_resnet_feature_extractor()
 
-model = model.cuda()
-backbone.cuda()
+if torch.cuda.is_available():
+    model = model.cuda()
+    backbone.cuda()
+    map_location=torch.device('cuda')
+else:
+    map_location=torch.device('cpu')
 
-ckpoints = torch.load('autoencoder_with_resnet_deep_features.pth')
+ckpoints = torch.load('autoencoder_with_resnet_deep_features.pth', map_location=map_location)
 model.load_state_dict(ckpoints)
 
 model.eval()
@@ -94,7 +98,10 @@ inference_cnt = 0
 onnx_export_done = False
 for path in test_path.glob('*/*.png'):
     fault_type = path.parts[-2]
-    test_image = transform(Image.open(path)).cuda().unsqueeze(0)
+    test_image = transform(Image.open(path)).unsqueeze(0)
+
+    if torch.cuda.is_available():
+        test_image.cuda()
     
     with torch.no_grad():
         start = time.time()

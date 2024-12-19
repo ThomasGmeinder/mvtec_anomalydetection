@@ -48,7 +48,8 @@ from AD_3_using_resnet_backbone_multilevel_model import FeatCAE, resnet_feature_
 backbone = resnet_feature_extractor()
 #backbone = new_resnet_feature_extractor()
 
-backbone.cuda()
+if torch.cuda.is_available():
+    backbone.cuda()
 
 def decision_function(segm_map):  
 
@@ -85,8 +86,8 @@ total_inference_time = 0
 inference_cnt = 0
 
 # Select the ONNX Execution Provider
-#EP = "VitisAIExecutionProvider" # NPU
-EP = "CPUExecutionProvider"    # CPU
+EP = "VitisAIExecutionProvider" # NPU
+#EP = "CPUExecutionProvider"    # CPU
 #EP = "DmlExecutionProvider"    # iGPU
 
 
@@ -107,7 +108,10 @@ ort_session = onnxruntime.InferenceSession(
 
 for path in test_path.glob('*/*.png'):
     fault_type = path.parts[-2]
-    test_image = transform(Image.open(path)).cuda().unsqueeze(0)
+    test_image = transform(Image.open(path)).unsqueeze(0)
+
+    if torch.cuda.is_available():
+        test_image.cuda()
     
     with torch.no_grad():
         start = time.time()
@@ -121,7 +125,7 @@ for path in test_path.glob('*/*.png'):
         recon_np = ort_session.run(None, {input_name: features_np})[0]
 
         # Convert the output back to a torch tensor
-        recon = torch.tensor(recon_np).cuda()
+        recon = torch.tensor(recon_np)
         inference_time = time.time()-start
         print(f"Inference time: {inference_time:.4f} s")
 
