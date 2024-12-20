@@ -12,13 +12,12 @@ import torchvision
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms
-import torch.optim as optim
+import onnxruntime
 
 from torchvision.models import resnet50, ResNet50_Weights
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay, f1_score
-import onnxruntime
 
 import time
 
@@ -99,7 +98,16 @@ EP_options = [{
     'ai_analyzer_profiling': AIA,
     }]
 
-onnx_model_path = "./autoencoder_with_resnet_deep_features.onnx"
+onnx_model_path = "./quantization_output/quark_model.onnx"
+# import vai_q_onnx
+# vai_q_onnx.quantize_static(
+#  onnx_model_path,
+#  onnx_model_int8_path,
+#  None,
+#  quant_format=vai_q_onnx.QuantFormat.QDQ,
+#  calibrate_method=vai_q_onnx.PowerOfTwoMethod.MinMSE)
+
+
 ort_session = onnxruntime.InferenceSession(
                     onnx_model_path,
                     providers=[EP],
