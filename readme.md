@@ -7,6 +7,7 @@ There are also scripts that focusses on running inference with the pre-rained mo
 # Running Inference
 Here are the steps to run inference:
 - Setup: `pip install -r requirements_minimal.txt`
+- Download Dataset: `python download_dataset.py`
 - FP32 Inference with original PyTorch model: `python AD_3_using_resnet_backbone_multilevel_inference.py`
 - Quantize using Quark: `python quark_quantize.py`
 - Run inference with the quantized model: `python AD_3_using_resnet_backbone_multilevel_inference_onnx.py`
