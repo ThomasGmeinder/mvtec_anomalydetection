@@ -8,6 +8,7 @@ from PIL import Image
 from tqdm.auto import tqdm
 
 import torch
+import torch.nn as nn
 import torchvision
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
@@ -94,8 +95,6 @@ print(f"Running inference on all carpet test images on {hw_target}")
 total_inference_time = 0
 inference_cnt = 0
 
-
-onnx_export_done = False
 for path in test_path.glob('*/*.png'):
     fault_type = path.parts[-2]
     test_image = transform(Image.open(path)).unsqueeze(0)
@@ -110,14 +109,6 @@ for path in test_path.glob('*/*.png'):
         recon = model(features)
         inference_time = time.time()-start
         print(f"Inference time: {inference_time:.4f} s")
-        if not onnx_export_done:
-            print("Exporting model to ONNX")
-            # backbone onnx export causesd error
-            # backbone_onnx = torch.onnx.dynamo_export(backbone, test_image)
-            # backbone_onnx.save("resnet50_backbone.onnx")
-            model_onnx = torch.onnx.dynamo_export(model, features)
-            model_onnx.save("autoencoder_with_resnet_deep_features.onnx")
-            onnx_export_done = True
     
     inference_cnt += 1
     
