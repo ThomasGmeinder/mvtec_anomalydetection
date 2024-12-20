@@ -79,11 +79,6 @@ backbone.eval()
 
 test_path = Path('carpet/test')
 
-hw_target = "GPU" if torch.cuda.is_available() else "CPU"
-print(f"Running inference on all carpet test images on {hw_target}")
-total_inference_time = 0
-inference_cnt = 0
-
 # Select the ONNX Execution Provider
 EP = "VitisAIExecutionProvider" # NPU
 #EP = "CPUExecutionProvider"    # CPU
@@ -99,20 +94,15 @@ EP_options = [{
     }]
 
 onnx_model_path = "./quantization_output/quark_model.onnx"
-# import vai_q_onnx
-# vai_q_onnx.quantize_static(
-#  onnx_model_path,
-#  onnx_model_int8_path,
-#  None,
-#  quant_format=vai_q_onnx.QuantFormat.QDQ,
-#  calibrate_method=vai_q_onnx.PowerOfTwoMethod.MinMSE)
-
 
 ort_session = onnxruntime.InferenceSession(
                     onnx_model_path,
                     providers=[EP],
                     provider_options=EP_options
                 )
+total_pt_inference_time = 0
+total_onnx_inference_time = 0
+inference_cnt = 0
 
 for path in test_path.glob('*/*.png'):
     fault_type = path.parts[-2]
@@ -124,20 +114,23 @@ for path in test_path.glob('*/*.png'):
     with torch.no_grad():
         start = time.time()
         features = backbone(test_image)
+        pt_inference_time = time.time() - start
 
         # Prepare the input for the ONNX model
         input_name = ort_session.get_inputs()[0].name
         features_np = features.cpu().numpy()
 
         # Run inference
+        start = time.time()
         recon_np = ort_session.run(None, {input_name: features_np})[0]
+        onnx_inference_time = time.time()-start
 
         # Convert the output back to a torch tensor
         recon = torch.tensor(recon_np)
         if torch.cuda.is_available():
             recon = recon.cuda()
-        inference_time = time.time()-start
-        print(f"Inference time: {inference_time:.4f} s")
+
+        print(f"PyTorch backbone inference time: {pt_inference_time:.4f} s, ONNX FeatCAE inference time: {onnx_inference_time:.4f} s ")
 
     
     inference_cnt += 1
@@ -154,9 +147,12 @@ for path in test_path.glob('*/*.png'):
     y_pred.append(y_pred_image.cpu().numpy())
     y_score.append(y_score_image.cpu().numpy())
     
-    total_inference_time += inference_time
+    total_pt_inference_time += pt_inference_time 
+    total_onnx_inference_time += onnx_inference_time
     
-print(f"Average inference time: {total_inference_time/inference_cnt:.4f} s")
+print(f"Average PyTorch backbone inference time:    {total_pt_inference_time/inference_cnt:.4f} s")
+print(f"Average ONNX FeatCAE inference time:        {total_onnx_inference_time/inference_cnt:.4f} s")
+print(f"Average total inference time:               {(total_pt_inference_time+total_onnx_inference_time)/inference_cnt:.4f} s")
 y_true = np.array(y_true)
 y_pred = np.array(y_pred)
 y_score = np.array(y_score)
